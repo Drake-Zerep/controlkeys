@@ -43,6 +43,11 @@
             border: none;
         }
         
+        .btn-success {
+            background-color: #27ae60;
+            border: none;
+        }
+        
         .btn-danger {
             background-color: var(--accent-color);
             border: none;
@@ -117,6 +122,12 @@
             padding: 15px 0;
             margin-top: 30px;
         }
+        
+        .report-section {
+            background-color: #e9ecef;
+            border-radius: 8px;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
@@ -133,11 +144,6 @@
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <a class="nav-link active" href="#"><i class="bi bi-house-door me-1"></i> Inicio</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#reportModal">
-                            <i class="bi bi-file-earmark-pdf me-1"></i> Generar Reporte
-                        </a>
                     </li>
                 </ul>
             </div>
@@ -201,22 +207,15 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label for="personName" class="form-label">Nombre de la Persona</label>
+                                <label for="personName" class="form-label">Retirada por</label>
                                 <input type="text" class="form-control" id="personName" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="actionType" class="form-label">Tipo de Movimiento</label>
-                                <select class="form-select" id="actionType" required>
-                                    <option value="entrega">Entrega</option>
-                                    <option value="recogida">Recogida</option>
-                                </select>
                             </div>
                             <div class="mb-3">
                                 <label for="notes" class="form-label">Observaciones (opcional)</label>
                                 <textarea class="form-control" id="notes" rows="2"></textarea>
                             </div>
                             <button type="submit" class="btn btn-primary w-100">
-                                <i class="bi bi-check-circle me-2"></i>Registrar Movimiento
+                                <i class="bi bi-check-circle me-2"></i>Registrar Retirada
                             </button>
                         </form>
                     </div>
@@ -263,8 +262,8 @@
                                     <tr>
                                         <th>Fecha/Hora</th>
                                         <th>Llave</th>
-                                        <th>Persona</th>
-                                        <th>Movimiento</th>
+                                        <th>Retirada por</th>
+                                        <th>Estado</th>
                                         <th>Acciones</th>
                                     </tr>
                                 </thead>
@@ -275,36 +274,38 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal para generar reporte -->
-    <div class="modal fade" id="reportModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Generar Reporte PDF</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="reportDate" class="form-label">Seleccionar Fecha</label>
-                        <input type="date" class="form-control" id="reportDate">
+                
+                <!-- Sección de reportes -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>Generar Reportes PDF
                     </div>
-                    <div class="mb-3">
-                        <label for="reportType" class="form-label">Tipo de Reporte</label>
-                        <select class="form-select" id="reportType">
-                            <option value="daily">Movimientos del día</option>
-                            <option value="status">Estado actual de llaves</option>
-                        </select>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="report-section p-3 mb-3">
+                                    <h5 class="mb-3">Reporte del Día</h5>
+                                    <p class="text-muted">Genera un PDF con todos los movimientos de hoy</p>
+                                    <button class="btn btn-primary w-100" id="generateTodayReport">
+                                        <i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF del Día
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="report-section p-3">
+                                    <h5 class="mb-3">Reporte por Fecha</h5>
+                                    <p class="text-muted">Selecciona una fecha para generar el reporte</p>
+                                    <div class="mb-3">
+                                        <label for="reportDate" class="form-label">Seleccionar Fecha</label>
+                                        <input type="date" class="form-control" id="reportDate">
+                                    </div>
+                                    <button class="btn btn-primary w-100" id="generateDateReport">
+                                        <i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF por Fecha
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" id="generateReport">
-                        <i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF
-                    </button>
                 </div>
             </div>
         </div>
@@ -465,7 +466,11 @@
             document.getElementById('keyForm').addEventListener('submit', handleFormSubmit);
             document.getElementById('filterToday').addEventListener('click', () => filterMovements('today'));
             document.getElementById('filterAll').addEventListener('click', () => filterMovements('all'));
-            document.getElementById('generateReport').addEventListener('click', generatePDF);
+            document.getElementById('generateTodayReport').addEventListener('click', generateTodayPDF);
+            document.getElementById('generateDateReport').addEventListener('click', generateDatePDF);
+            
+            // Establecer fecha actual por defecto en el selector de fecha
+            document.getElementById('reportDate').valueAsDate = new Date();
         }
 
         function handleFormSubmit(e) {
@@ -473,7 +478,6 @@
             
             const keyId = parseInt(document.getElementById('keySelect').value);
             const personName = document.getElementById('personName').value;
-            const actionType = document.getElementById('actionType').value;
             const notes = document.getElementById('notes').value;
             
             // Validar que la llave existe
@@ -483,14 +487,9 @@
                 return;
             }
             
-            // Validar movimiento según estado actual
-            if (actionType === 'entrega' && key.status !== 'available') {
+            // Validar que la llave está disponible
+            if (key.status !== 'available') {
                 alert('Error: Esta llave ya está prestada');
-                return;
-            }
-            
-            if (actionType === 'recogida' && key.status !== 'borrowed') {
-                alert('Error: Esta llave no está prestada actualmente');
                 return;
             }
             
@@ -500,16 +499,17 @@
                 keyId: keyId,
                 keyName: key.name,
                 personName: personName,
-                action: actionType,
                 notes: notes,
-                timestamp: new Date().toISOString()
+                status: 'prestada',
+                timestamp: new Date().toISOString(),
+                returnTimestamp: null
             };
             
             movements.unshift(movement);
             localStorage.setItem('keyMovements', JSON.stringify(movements));
             
             // Actualizar estado de la llave
-            key.status = actionType === 'entrega' ? 'borrowed' : 'available';
+            key.status = 'borrowed';
             
             // Limpiar formulario
             document.getElementById('keyForm').reset();
@@ -519,7 +519,7 @@
             loadMovements();
             
             // Mostrar mensaje de éxito
-            alert(`Movimiento registrado correctamente: ${actionType === 'entrega' ? 'Entrega' : 'Recogida'} de llave ${keyId} - ${key.name}`);
+            alert(`Retirada registrada correctamente: Llave ${keyId} - ${key.name} retirada por ${personName}`);
         }
 
         function loadMovements(filter = 'all') {
@@ -552,19 +552,44 @@
                     <td>${movement.keyId} - ${movement.keyName}</td>
                     <td>${movement.personName}</td>
                     <td>
-                        <span class="key-status ${movement.action === 'entrega' ? 'status-borrowed' : 'status-available'}">
-                            ${movement.action === 'entrega' ? 'Entrega' : 'Recogida'}
+                        <span class="key-status ${movement.status === 'prestada' ? 'status-borrowed' : 'status-available'}">
+                            ${movement.status === 'prestada' ? 'Prestada' : 'Devuelta'}
                         </span>
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteMovement(${movement.id})">
-                            <i class="bi bi-trash"></i>
-                        </button>
+                        ${movement.status === 'prestada' ? 
+                            `<button class="btn btn-sm btn-success" onclick="markAsReturned(${movement.id})">
+                                <i class="bi bi-check-lg me-1"></i>Entregada
+                            </button>` : 
+                            `<span class="text-muted">Devuelta ${movement.returnTimestamp ? new Date(movement.returnTimestamp).toLocaleDateString() : ''}</span>`
+                        }
                     </td>
                 `;
                 
                 tbody.appendChild(row);
             });
+        }
+
+        function markAsReturned(movementId) {
+            if (confirm('¿Está seguro de que desea marcar esta llave como entregada?')) {
+                const movement = movements.find(m => m.id === movementId);
+                if (movement) {
+                    movement.status = 'devuelta';
+                    movement.returnTimestamp = new Date().toISOString();
+                    
+                    // Actualizar estado de la llave
+                    const key = keys.find(k => k.id === movement.keyId);
+                    if (key) {
+                        key.status = 'available';
+                    }
+                    
+                    localStorage.setItem('keyMovements', JSON.stringify(movements));
+                    loadMovements();
+                    updateStats();
+                    
+                    alert(`Llave marcada como entregada correctamente`);
+                }
+            }
         }
 
         function filterMovements(type) {
@@ -575,15 +600,6 @@
             document.getElementById('filterToday').classList.toggle('btn-outline-primary', type !== 'today');
             document.getElementById('filterAll').classList.toggle('btn-primary', type === 'all');
             document.getElementById('filterAll').classList.toggle('btn-outline-secondary', type !== 'all');
-        }
-
-        function deleteMovement(id) {
-            if (confirm('¿Está seguro de que desea eliminar este movimiento?')) {
-                movements = movements.filter(m => m.id !== id);
-                localStorage.setItem('keyMovements', JSON.stringify(movements));
-                loadMovements();
-                updateStats();
-            }
         }
 
         function updateStats() {
@@ -605,105 +621,101 @@
             document.getElementById('borrowedBadge').textContent = borrowedKeys;
         }
 
-        function generatePDF() {
+        function generateTodayPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
-            
-            const reportType = document.getElementById('reportType').value;
-            const reportDate = document.getElementById('reportDate').value;
             
             // Título del reporte
             doc.setFontSize(16);
             doc.text('Sistema de Control de Llaves', 20, 20);
             doc.setFontSize(12);
-            doc.text(`Reporte generado: ${new Date().toLocaleString()}`, 20, 30);
+            doc.text(`Reporte del día: ${new Date().toLocaleDateString()}`, 20, 30);
+            doc.text(`Generado: ${new Date().toLocaleString()}`, 20, 40);
             
-            let yPosition = 50;
+            // Filtrar movimientos de hoy
+            const today = new Date().toDateString();
+            const todayMovements = movements.filter(m => 
+                new Date(m.timestamp).toDateString() === today
+            );
             
-            if (reportType === 'daily') {
-                // Reporte de movimientos del día
-                const selectedDate = reportDate ? new Date(reportDate) : new Date();
-                const formattedDate = selectedDate.toLocaleDateString();
-                
-                doc.text(`Movimientos del día: ${formattedDate}`, 20, yPosition);
-                yPosition += 10;
-                
-                // Filtrar movimientos por fecha seleccionada
-                const filteredMovements = movements.filter(m => {
-                    const movementDate = new Date(m.timestamp).toDateString();
-                    return movementDate === selectedDate.toDateString();
-                });
-                
-                if (filteredMovements.length === 0) {
-                    doc.text('No hay movimientos para esta fecha', 20, yPosition);
-                } else {
-                    // Crear tabla
-                    const tableData = filteredMovements.map(m => {
-                        const date = new Date(m.timestamp);
-                        return [
-                            `${date.toLocaleTimeString()}`,
-                            `${m.keyId} - ${m.keyName}`,
-                            m.personName,
-                            m.action === 'entrega' ? 'Entrega' : 'Recogida'
-                        ];
-                    });
-                    
-                    doc.autoTable({
-                        startY: yPosition,
-                        head: [['Hora', 'Llave', 'Persona', 'Movimiento']],
-                        body: tableData,
-                        theme: 'grid',
-                        headStyles: { fillColor: [44, 62, 80] }
-                    });
-                }
+            if (todayMovements.length === 0) {
+                doc.text('No hay movimientos para hoy', 20, 60);
             } else {
-                // Reporte de estado actual de llaves
-                doc.text('Estado Actual de Llaves', 20, yPosition);
-                yPosition += 10;
-                
-                const availableKeys = keys.filter(k => k.status === 'available');
-                const borrowedKeys = keys.filter(k => k.status === 'borrowed');
-                
-                // Llaves disponibles
-                doc.setFontSize(10);
-                doc.text(`Llaves Disponibles: ${availableKeys.length}`, 20, yPosition);
-                yPosition += 7;
-                
-                availableKeys.forEach(key => {
-                    if (yPosition > 270) {
-                        doc.addPage();
-                        yPosition = 20;
-                    }
-                    doc.text(`• ${key.id} - ${key.name}`, 25, yPosition);
-                    yPosition += 5;
+                // Crear tabla
+                const tableData = todayMovements.map(m => {
+                    const date = new Date(m.timestamp);
+                    return [
+                        `${date.toLocaleTimeString()}`,
+                        `${m.keyId} - ${m.keyName}`,
+                        m.personName,
+                        m.status === 'prestada' ? 'Prestada' : 'Devuelta'
+                    ];
                 });
                 
-                yPosition += 5;
-                
-                // Llaves prestadas
-                doc.text(`Llaves Prestadas: ${borrowedKeys.length}`, 20, yPosition);
-                yPosition += 7;
-                
-                borrowedKeys.forEach(key => {
-                    if (yPosition > 270) {
-                        doc.addPage();
-                        yPosition = 20;
-                    }
-                    doc.text(`• ${key.id} - ${key.name}`, 25, yPosition);
-                    yPosition += 5;
+                doc.autoTable({
+                    startY: 50,
+                    head: [['Hora', 'Llave', 'Retirada por', 'Estado']],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [44, 62, 80] }
                 });
             }
             
             // Guardar PDF
-            const fileName = reportType === 'daily' ? 
-                `movimientos_${reportDate || new Date().toISOString().split('T')[0]}.pdf` : 
-                `estado_llaves_${new Date().toISOString().split('T')[0]}.pdf`;
-            
+            const fileName = `movimientos_${new Date().toISOString().split('T')[0]}.pdf`;
             doc.save(fileName);
+        }
+
+        function generateDatePDF() {
+            const reportDate = document.getElementById('reportDate').value;
             
-            // Cerrar modal
-            const modal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
-            modal.hide();
+            if (!reportDate) {
+                alert('Por favor, seleccione una fecha');
+                return;
+            }
+            
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Título del reporte
+            doc.setFontSize(16);
+            doc.text('Sistema de Control de Llaves', 20, 20);
+            doc.setFontSize(12);
+            doc.text(`Reporte del día: ${new Date(reportDate).toLocaleDateString()}`, 20, 30);
+            doc.text(`Generado: ${new Date().toLocaleString()}`, 20, 40);
+            
+            // Filtrar movimientos por fecha seleccionada
+            const selectedDate = new Date(reportDate).toDateString();
+            const filteredMovements = movements.filter(m => 
+                new Date(m.timestamp).toDateString() === selectedDate
+            );
+            
+            if (filteredMovements.length === 0) {
+                doc.text('No hay movimientos para esta fecha', 20, 60);
+            } else {
+                // Crear tabla
+                const tableData = filteredMovements.map(m => {
+                    const date = new Date(m.timestamp);
+                    return [
+                        `${date.toLocaleTimeString()}`,
+                        `${m.keyId} - ${m.keyName}`,
+                        m.personName,
+                        m.status === 'prestada' ? 'Prestada' : 'Devuelta'
+                    ];
+                });
+                
+                doc.autoTable({
+                    startY: 50,
+                    head: [['Hora', 'Llave', 'Retirada por', 'Estado']],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [44, 62, 80] }
+                });
+            }
+            
+            // Guardar PDF
+            const fileName = `movimientos_${reportDate}.pdf`;
+            doc.save(fileName);
         }
     </script>
 </body>
