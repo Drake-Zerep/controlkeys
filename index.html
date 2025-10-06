@@ -549,7 +549,7 @@
                 
                 // Crear botón de entregada con evento directamente
                 const entregadaButton = movement.status === 'prestada' ? 
-                    `<button class="btn btn-sm btn-success" data-movement-id="${movement.id}">
+                    `<button class="btn btn-sm btn-success entregada-btn" data-movement-id="${movement.id}">
                         <i class="bi bi-check-lg me-1"></i>Entregada
                     </button>` : 
                     `<span class="text-muted">Devuelta ${movement.returnTimestamp ? new Date(movement.returnTimestamp).toLocaleDateString() : ''}</span>`;
@@ -570,7 +570,7 @@
             });
             
             // Agregar event listeners a los botones de entregada
-            document.querySelectorAll('button[data-movement-id]').forEach(button => {
+            document.querySelectorAll('.entregada-btn').forEach(button => {
                 button.addEventListener('click', function() {
                     const movementId = parseInt(this.getAttribute('data-movement-id'));
                     markAsReturned(movementId);
@@ -593,8 +593,6 @@
                 localStorage.setItem('keyMovements', JSON.stringify(movements));
                 loadMovements();
                 updateStats();
-                
-                alert(`Llave marcada como entregada correctamente`);
             }
         }
 
@@ -726,3 +724,4 @@
     </script>
 </body>
 </html>
+
