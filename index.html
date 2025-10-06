@@ -547,6 +547,13 @@
                 const date = new Date(movement.timestamp);
                 const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
                 
+                // Crear botón de entregada con evento directamente
+                const entregadaButton = movement.status === 'prestada' ? 
+                    `<button class="btn btn-sm btn-success" data-movement-id="${movement.id}">
+                        <i class="bi bi-check-lg me-1"></i>Entregada
+                    </button>` : 
+                    `<span class="text-muted">Devuelta ${movement.returnTimestamp ? new Date(movement.returnTimestamp).toLocaleDateString() : ''}</span>`;
+                
                 row.innerHTML = `
                     <td>${formattedDate}</td>
                     <td>${movement.keyId} - ${movement.keyName}</td>
@@ -556,39 +563,38 @@
                             ${movement.status === 'prestada' ? 'Prestada' : 'Devuelta'}
                         </span>
                     </td>
-                    <td>
-                        ${movement.status === 'prestada' ? 
-                            `<button class="btn btn-sm btn-success" onclick="markAsReturned(${movement.id})">
-                                <i class="bi bi-check-lg me-1"></i>Entregada
-                            </button>` : 
-                            `<span class="text-muted">Devuelta ${movement.returnTimestamp ? new Date(movement.returnTimestamp).toLocaleDateString() : ''}</span>`
-                        }
-                    </td>
+                    <td>${entregadaButton}</td>
                 `;
                 
                 tbody.appendChild(row);
             });
+            
+            // Agregar event listeners a los botones de entregada
+            document.querySelectorAll('button[data-movement-id]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const movementId = parseInt(this.getAttribute('data-movement-id'));
+                    markAsReturned(movementId);
+                });
+            });
         }
 
         function markAsReturned(movementId) {
-            if (confirm('¿Está seguro de que desea marcar esta llave como entregada?')) {
-                const movement = movements.find(m => m.id === movementId);
-                if (movement) {
-                    movement.status = 'devuelta';
-                    movement.returnTimestamp = new Date().toISOString();
-                    
-                    // Actualizar estado de la llave
-                    const key = keys.find(k => k.id === movement.keyId);
-                    if (key) {
-                        key.status = 'available';
-                    }
-                    
-                    localStorage.setItem('keyMovements', JSON.stringify(movements));
-                    loadMovements();
-                    updateStats();
-                    
-                    alert(`Llave marcada como entregada correctamente`);
+            const movement = movements.find(m => m.id === movementId);
+            if (movement) {
+                movement.status = 'devuelta';
+                movement.returnTimestamp = new Date().toISOString();
+                
+                // Actualizar estado de la llave
+                const key = keys.find(k => k.id === movement.keyId);
+                if (key) {
+                    key.status = 'available';
                 }
+                
+                localStorage.setItem('keyMovements', JSON.stringify(movements));
+                loadMovements();
+                updateStats();
+                
+                alert(`Llave marcada como entregada correctamente`);
             }
         }
 
