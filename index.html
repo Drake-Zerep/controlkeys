@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Control de Llaves</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            border: none;
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 10px 10px 0 0 !important;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            border: none;
+        }
+        
+        .btn-danger {
+            background-color: var(--accent-color);
+            border: none;
+        }
+        
+        .table-responsive {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .table th {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .key-status {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .status-available {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .status-borrowed {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            margin-right: 15px;
+        }
+        
+        .stats-card {
+            text-align: center;
+            padding: 15px;
+        }
+        
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        
+        .stats-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
+        
+        footer {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 0;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--primary-color);">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="bi bi-key-fill me-2"></i>Sistema de Control de Llaves
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#"><i class="bi bi-house-door me-1"></i> Inicio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-bs-toggle="modal" data-bs-target="#reportModal">
+                            <i class="bi bi-file-earmark-pdf me-1"></i> Generar Reporte
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Logo y título -->
+        <div class="logo-container">
+            <div class="logo">
+                <i class="bi bi-key"></i>
+            </div>
+            <div>
+                <h1 class="mb-0">Control de Entrega y Recogida de Llaves</h1>
+                <p class="text-muted">Registro completo de movimientos de llaves</p>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-number" id="totalKeys">0</div>
+                    <div class="stats-label">Total de Llaves</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-number" id="availableKeys">0</div>
+                    <div class="stats-label">Disponibles</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-number" id="borrowedKeys">0</div>
+                    <div class="stats-label">Prestadas</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-number" id="todayMovements">0</div>
+                    <div class="stats-label">Movimientos Hoy</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Formulario de registro -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-plus-circle me-2"></i>Registro de Movimiento
+                    </div>
+                    <div class="card-body">
+                        <form id="keyForm">
+                            <div class="mb-3">
+                                <label for="keySelect" class="form-label">Seleccionar Llave</label>
+                                <select class="form-select" id="keySelect" required>
+                                    <option value="" selected disabled>Seleccione una llave</option>
+                                    <!-- Las opciones se cargarán con JavaScript -->
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="personName" class="form-label">Nombre de la Persona</label>
+                                <input type="text" class="form-control" id="personName" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="actionType" class="form-label">Tipo de Movimiento</label>
+                                <select class="form-select" id="actionType" required>
+                                    <option value="entrega">Entrega</option>
+                                    <option value="recogida">Recogida</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="notes" class="form-label">Observaciones (opcional)</label>
+                                <textarea class="form-control" id="notes" rows="2"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-check-circle me-2"></i>Registrar Movimiento
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Estado de llaves -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="bi bi-info-circle me-2"></i>Estado de Llaves
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Disponibles:</span>
+                            <span class="badge bg-success" id="availableBadge">0</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Prestadas:</span>
+                            <span class="badge bg-danger" id="borrowedBadge">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial de movimientos -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="bi bi-clock-history me-2"></i>Historial de Movimientos
+                        </div>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" id="filterToday">
+                                <i class="bi bi-calendar-day me-1"></i>Hoy
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" id="filterAll">
+                                <i class="bi bi-calendar-range me-1"></i>Todos
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover" id="movementsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha/Hora</th>
+                                        <th>Llave</th>
+                                        <th>Persona</th>
+                                        <th>Movimiento</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Los datos se cargarán con JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para generar reporte -->
+    <div class="modal fade" id="reportModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Generar Reporte PDF</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="reportDate" class="form-label">Seleccionar Fecha</label>
+                        <input type="date" class="form-control" id="reportDate">
+                    </div>
+                    <div class="mb-3">
+                        <label for="reportType" class="form-label">Tipo de Reporte</label>
+                        <select class="form-select" id="reportType">
+                            <option value="daily">Movimientos del día</option>
+                            <option value="status">Estado actual de llaves</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="generateReport">
+                        <i class="bi bi-file-earmark-pdf me-2"></i>Generar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-5">
+        <div class="container text-center">
+            <p class="mb-0">Sistema de Control de Llaves &copy; 2023</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Datos de las llaves
+        const keys = [
+            { id: 1, name: "Economato", status: "available" },
+            { id: 2, name: "Restaurante babbo american grill", status: "available" },
+            { id: 3, name: "Cocina babbo american grill", status: "available" },
+            { id: 4, name: "Coco café", status: "available" },
+            { id: 5, name: "Copia (52) Neveras", status: "available" },
+            { id: 6, name: "Restaurante las rocas - barra", status: "available" },
+            { id: 7, name: "Sala kentia", status: "available" },
+            { id: 8, name: "Lava bar", status: "available" },
+            { id: 10, name: "Rest. ugo e vandino", status: "available" },
+            { id: 11, name: "Oficina director", status: "available" },
+            { id: 12, name: "Oficina director a.b.", status: "available" },
+            { id: 13, name: "Candado neveras ugo&vandino", status: "available" },
+            { id: 14, name: "Oficina del cheff", status: "available" },
+            { id: 15, name: "Camara de cocinas 1", status: "available" },
+            { id: 16, name: "Sugar reef", status: "available" },
+            { id: 17, name: "Ex sala de arte", status: "available" },
+            { id: 18, name: "Sunset bar", status: "available" },
+            { id: 19, name: "Barefoot grill", status: "available" },
+            { id: 20, name: "Lenceria", status: "available" },
+            { id: 21, name: "Jaula vidrios (guardan envases de bebidas vacios)", status: "available" },
+            { id: 22, name: "Lavanderia", status: "available" },
+            { id: 23, name: "Room-service", status: "available" },
+            { id: 24, name: "Almacen de plateria (al lado corte ingles)", status: "available" },
+            { id: 25, name: "Oficina chakib y chefi.", status: "available" },
+            { id: 26, name: "Oficinas de recepcion", status: "available" },
+            { id: 27, name: "Oficina alimentacion y bebidas", status: "available" },
+            { id: 28, name: "Candado bombonas economato", status: "available" },
+            { id: 29, name: "Ex sala juegos", status: "available" },
+            { id: 30, name: "Puerta madera propietarios", status: "available" },
+            { id: 31, name: "Jaula vidrios(envases vacios (2ª puerta)", status: "available" },
+            { id: 40, name: "Piscina rocas", status: "available" },
+            { id: 41, name: "Almacen gimnasio exterior", status: "available" },
+            { id: 42, name: "Piscinas mimosas", status: "available" },
+            { id: 43, name: "Beach club bar (rocas)", status: "available" },
+            { id: 44, name: "Vehiculo las rocas", status: "available" },
+            { id: 45, name: "Comedor de personal (entrada principal, desde cctv)", status: "available" },
+            { id: 47, name: "Control de cctv - H24 y despacho direccion", status: "available" },
+            { id: 48, name: "El corte ingles", status: "available" },
+            { id: 49, name: "Control cctv y copia parking jardineros", status: "available" },
+            { id: 50, name: "Llavero de seguridad", status: "available" },
+            { id: 51, name: "Cuarto vestuario vs", status: "available" },
+            { id: 52, name: "Llave office lounge club", status: "available" },
+            { id: 53, name: "Mueble liquido plateria", status: "available" },
+            { id: 54, name: "Puertas cocina trattoria", status: "available" },
+            { id: 55, name: "Cuarto y camaras de pasteleria", status: "available" },
+            { id: 56, name: "Camaras nuevas( al lado economato) candado nevera de zumos", status: "available" },
+            { id: 57, name: "Enfermeria", status: "available" },
+            { id: 58, name: "Neveras cocina las rocas", status: "available" },
+            { id: 59, name: "Verduras y frutas, carniceria, pescaderia, italiano.", status: "available" },
+            { id: 60, name: "Gimnasio", status: "available" },
+            { id: 61, name: "Guarderia o miniclub", status: "available" },
+            { id: 62, name: "Puertas perimetrales mimosa", status: "available" },
+            { id: 64, name: "Caja de llaves interno room service", status: "available" },
+            { id: 65, name: "Llaves jardineria (garden care)", status: "available" },
+            { id: 67, name: "Sobre-jardineria (juan luis)", status: "available" },
+            { id: 68, name: "Cuarto de viveres cocina central", status: "available" },
+            { id: 69, name: "Oficina maitre mimosa", status: "available" },
+            { id: 70, name: "Copia de la nº 23", status: "available" },
+            { id: 71, name: "Almacen de fruta y verduras", status: "available" },
+            { id: 72, name: "Acceso a cuevas por pasillo cocinas", status: "available" },
+            { id: 73, name: "Copia de nº 78 (despensa en carniceria)", status: "available" },
+            { id: 74, name: "Verja de hierro acceso a cocinas el churrasco", status: "available" },
+            { id: 75, name: "Cristalera de las cuevas 1 y 2", status: "available" },
+            { id: 76, name: "Cristalera de restaurante mimosas 3 y 4", status: "available" },
+            { id: 77, name: "Spa aura-soma y gym", status: "available" },
+            { id: 79, name: "Cancela cascadillas", status: "available" },
+            { id: 80, name: "Copia de la nº 15", status: "available" },
+            { id: 81, name: "Sobrante llavero n.25", status: "available" },
+            { id: 82, name: "Copia llave n. 46", status: "available" },
+            { id: 83, name: "Sala inca nº 1 (avis)", status: "available" },
+            { id: 84, name: "Sala inca nº 2", status: "available" },
+            { id: 85, name: "Sala galeria de arte", status: "available" },
+            { id: 86, name: "Sala ficus", status: "available" },
+            { id: 88, name: "Sala adelfas", status: "available" },
+            { id: 89, name: "Lavanderia copia", status: "available" },
+            { id: 90, name: "Copias de la nº 55", status: "available" },
+            { id: 91, name: "Comedor personal (acceso a lavanderia)", status: "available" },
+            { id: 93, name: "Copias de la nº 73", status: "available" },
+            { id: 94, name: "Copias de la llave cuarto plateria limpieza lado ascensor y cuarto cartón y papel", status: "available" },
+            { id: 95, name: "Copia de nº 68", status: "available" },
+            { id: 98, name: "Ascensores otis", status: "available" },
+            { id: 99, name: "Ascensores otis", status: "available" },
+            { id: 101, name: "Puerta madera propietarios", status: "available" },
+            { id: 102, name: "Copia de nº 7 (cocina rocas)", status: "available" },
+            { id: 103, name: "Objetos perdidos", status: "available" },
+            { id: 104, name: "Copia de nº 19 (barfoot grill)", status: "available" },
+            { id: 105, name: "Copia de nº 45 (comedor personal)", status: "available" },
+            { id: 106, name: "Copia de nº 54 (cocina trattoria)", status: "available" },
+            { id: 107, name: "Copia de nº 55 (cuarto desayuno)", status: "available" },
+            { id: 108, name: "Copia de nº 60", status: "available" },
+            { id: 109, name: "Copia de nº 22 (lavanderia)", status: "available" },
+            { id: 110, name: "Jaula vidrios (copia 21)", status: "available" },
+            { id: 112, name: "Traspalet Electrico", status: "available" },
+            { id: 116, name: "Cardex cliente recepcion", status: "available" },
+            { id: 117, name: "Maletero botones", status: "available" },
+            { id: 118, name: "Acceso coco café (copia N4)", status: "available" },
+            { id: 119, name: "Candado parking jardineros", status: "available" },
+            { id: 121, name: "Copia cuarto pisceno (40)", status: "available" },
+            { id: 901, name: "Caja fuerte", status: "available" },
+            { id: 902, name: "Caja fuerte RECEPCION", status: "available" },
+            { id: 903, name: "Caja fuerte rocas", status: "available" },
+            { id: 904, name: "Caja fuerte pinxcos", status: "available" },
+            { id: 905, name: "Caja fuerte trattoria", status: "available" },
+            { id: 906, name: "Caja fuerte barfoot grill", status: "available" },
+            { id: 907, name: "Caja fuerte coco", status: "available" },
+            { id: 908, name: "Caja tides", status: "available" },
+            { id: 909, name: "Caja fuerte", status: "available" },
+            { id: 910, name: "Caja fuerte club", status: "available" },
+            { id: 911, name: "Caja fuerte sunset", status: "available" },
+            { id: 912, name: "Caja fuerte sugar reef", status: "available" },
+            { id: 913, name: "Caja fuerte world café", status: "available" },
+            { id: 914, name: "Caja fuerte lava", status: "available" },
+            { id: 915, name: "Caja fuerte babbo american grill", status: "available" },
+            { id: 916, name: "Caja fuerte RECEPCION", status: "available" }
+        ];
+
+        // Historial de movimientos
+        let movements = JSON.parse(localStorage.getItem('keyMovements')) || [];
+
+        // Inicializar la aplicación
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+        });
+
+        function initializeApp() {
+            // Cargar opciones de llaves en el select
+            const keySelect = document.getElementById('keySelect');
+            keys.forEach(key => {
+                const option = document.createElement('option');
+                option.value = key.id;
+                option.textContent = `${key.id} - ${key.name}`;
+                keySelect.appendChild(option);
+            });
+
+            // Actualizar estadísticas
+            updateStats();
+
+            // Cargar historial de movimientos
+            loadMovements();
+
+            // Configurar eventos
+            document.getElementById('keyForm').addEventListener('submit', handleFormSubmit);
+            document.getElementById('filterToday').addEventListener('click', () => filterMovements('today'));
+            document.getElementById('filterAll').addEventListener('click', () => filterMovements('all'));
+            document.getElementById('generateReport').addEventListener('click', generatePDF);
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            
+            const keyId = parseInt(document.getElementById('keySelect').value);
+            const personName = document.getElementById('personName').value;
+            const actionType = document.getElementById('actionType').value;
+            const notes = document.getElementById('notes').value;
+            
+            // Validar que la llave existe
+            const key = keys.find(k => k.id === keyId);
+            if (!key) {
+                alert('Error: Llave no encontrada');
+                return;
+            }
+            
+            // Validar movimiento según estado actual
+            if (actionType === 'entrega' && key.status !== 'available') {
+                alert('Error: Esta llave ya está prestada');
+                return;
+            }
+            
+            if (actionType === 'recogida' && key.status !== 'borrowed') {
+                alert('Error: Esta llave no está prestada actualmente');
+                return;
+            }
+            
+            // Registrar movimiento
+            const movement = {
+                id: Date.now(),
+                keyId: keyId,
+                keyName: key.name,
+                personName: personName,
+                action: actionType,
+                notes: notes,
+                timestamp: new Date().toISOString()
+            };
+            
+            movements.unshift(movement);
+            localStorage.setItem('keyMovements', JSON.stringify(movements));
+            
+            // Actualizar estado de la llave
+            key.status = actionType === 'entrega' ? 'borrowed' : 'available';
+            
+            // Limpiar formulario
+            document.getElementById('keyForm').reset();
+            
+            // Actualizar interfaz
+            updateStats();
+            loadMovements();
+            
+            // Mostrar mensaje de éxito
+            alert(`Movimiento registrado correctamente: ${actionType === 'entrega' ? 'Entrega' : 'Recogida'} de llave ${keyId} - ${key.name}`);
+        }
+
+        function loadMovements(filter = 'all') {
+            const tbody = document.querySelector('#movementsTable tbody');
+            tbody.innerHTML = '';
+            
+            let filteredMovements = movements;
+            
+            if (filter === 'today') {
+                const today = new Date().toDateString();
+                filteredMovements = movements.filter(m => 
+                    new Date(m.timestamp).toDateString() === today
+                );
+            }
+            
+            if (filteredMovements.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td colspan="5" class="text-center">No hay movimientos registrados</td>`;
+                tbody.appendChild(row);
+                return;
+            }
+            
+            filteredMovements.forEach(movement => {
+                const row = document.createElement('tr');
+                const date = new Date(movement.timestamp);
+                const formattedDate = `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+                
+                row.innerHTML = `
+                    <td>${formattedDate}</td>
+                    <td>${movement.keyId} - ${movement.keyName}</td>
+                    <td>${movement.personName}</td>
+                    <td>
+                        <span class="key-status ${movement.action === 'entrega' ? 'status-borrowed' : 'status-available'}">
+                            ${movement.action === 'entrega' ? 'Entrega' : 'Recogida'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteMovement(${movement.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function filterMovements(type) {
+            loadMovements(type);
+            
+            // Actualizar botones activos
+            document.getElementById('filterToday').classList.toggle('btn-primary', type === 'today');
+            document.getElementById('filterToday').classList.toggle('btn-outline-primary', type !== 'today');
+            document.getElementById('filterAll').classList.toggle('btn-primary', type === 'all');
+            document.getElementById('filterAll').classList.toggle('btn-outline-secondary', type !== 'all');
+        }
+
+        function deleteMovement(id) {
+            if (confirm('¿Está seguro de que desea eliminar este movimiento?')) {
+                movements = movements.filter(m => m.id !== id);
+                localStorage.setItem('keyMovements', JSON.stringify(movements));
+                loadMovements();
+                updateStats();
+            }
+        }
+
+        function updateStats() {
+            const totalKeys = keys.length;
+            const availableKeys = keys.filter(k => k.status === 'available').length;
+            const borrowedKeys = keys.filter(k => k.status === 'borrowed').length;
+            
+            const today = new Date().toDateString();
+            const todayMovements = movements.filter(m => 
+                new Date(m.timestamp).toDateString() === today
+            ).length;
+            
+            document.getElementById('totalKeys').textContent = totalKeys;
+            document.getElementById('availableKeys').textContent = availableKeys;
+            document.getElementById('borrowedKeys').textContent = borrowedKeys;
+            document.getElementById('todayMovements').textContent = todayMovements;
+            
+            document.getElementById('availableBadge').textContent = availableKeys;
+            document.getElementById('borrowedBadge').textContent = borrowedKeys;
+        }
+
+        function generatePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            const reportType = document.getElementById('reportType').value;
+            const reportDate = document.getElementById('reportDate').value;
+            
+            // Título del reporte
+            doc.setFontSize(16);
+            doc.text('Sistema de Control de Llaves', 20, 20);
+            doc.setFontSize(12);
+            doc.text(`Reporte generado: ${new Date().toLocaleString()}`, 20, 30);
+            
+            let yPosition = 50;
+            
+            if (reportType === 'daily') {
+                // Reporte de movimientos del día
+                const selectedDate = reportDate ? new Date(reportDate) : new Date();
+                const formattedDate = selectedDate.toLocaleDateString();
+                
+                doc.text(`Movimientos del día: ${formattedDate}`, 20, yPosition);
+                yPosition += 10;
+                
+                // Filtrar movimientos por fecha seleccionada
+                const filteredMovements = movements.filter(m => {
+                    const movementDate = new Date(m.timestamp).toDateString();
+                    return movementDate === selectedDate.toDateString();
+                });
+                
+                if (filteredMovements.length === 0) {
+                    doc.text('No hay movimientos para esta fecha', 20, yPosition);
+                } else {
+                    // Crear tabla
+                    const tableData = filteredMovements.map(m => {
+                        const date = new Date(m.timestamp);
+                        return [
+                            `${date.toLocaleTimeString()}`,
+                            `${m.keyId} - ${m.keyName}`,
+                            m.personName,
+                            m.action === 'entrega' ? 'Entrega' : 'Recogida'
+                        ];
+                    });
+                    
+                    doc.autoTable({
+                        startY: yPosition,
+                        head: [['Hora', 'Llave', 'Persona', 'Movimiento']],
+                        body: tableData,
+                        theme: 'grid',
+                        headStyles: { fillColor: [44, 62, 80] }
+                    });
+                }
+            } else {
+                // Reporte de estado actual de llaves
+                doc.text('Estado Actual de Llaves', 20, yPosition);
+                yPosition += 10;
+                
+                const availableKeys = keys.filter(k => k.status === 'available');
+                const borrowedKeys = keys.filter(k => k.status === 'borrowed');
+                
+                // Llaves disponibles
+                doc.setFontSize(10);
+                doc.text(`Llaves Disponibles: ${availableKeys.length}`, 20, yPosition);
+                yPosition += 7;
+                
+                availableKeys.forEach(key => {
+                    if (yPosition > 270) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    doc.text(`• ${key.id} - ${key.name}`, 25, yPosition);
+                    yPosition += 5;
+                });
+                
+                yPosition += 5;
+                
+                // Llaves prestadas
+                doc.text(`Llaves Prestadas: ${borrowedKeys.length}`, 20, yPosition);
+                yPosition += 7;
+                
+                borrowedKeys.forEach(key => {
+                    if (yPosition > 270) {
+                        doc.addPage();
+                        yPosition = 20;
+                    }
+                    doc.text(`• ${key.id} - ${key.name}`, 25, yPosition);
+                    yPosition += 5;
+                });
+            }
+            
+            // Guardar PDF
+            const fileName = reportType === 'daily' ? 
+                `movimientos_${reportDate || new Date().toISOString().split('T')[0]}.pdf` : 
+                `estado_llaves_${new Date().toISOString().split('T')[0]}.pdf`;
+            
+            doc.save(fileName);
+            
+            // Cerrar modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('reportModal'));
+            modal.hide();
+        }
+    </script>
+</body>
+</html>
